@@ -6,6 +6,7 @@ const registerShow = (req, res) => {
 };
 
 const registerDo = async (req, res, next) => {
+  console.log(req.body);
   if (req.body.password != req.body.password1) {
     req.flash('error', 'The passwords entered do not match.');
     res.render('register');
@@ -38,10 +39,7 @@ const logonShow = (req, res) => {
   if (req.user) {
     return res.redirect('/');
   }
-  res.render('logon', {
-    errors: req.flash('error'),
-    info: req.flash('info'),
-  });
+  res.render('logon');
 };
 
 module.exports = {
