@@ -5,7 +5,6 @@ const app = express();
 
 require('dotenv').config(); // to load the .env file into the process.env object
 const session = require('express-session');
-
 const MongoDBStore = require('connect-mongodb-session')(session);
 const url = process.env.MONGO_URI;
 
@@ -32,13 +31,13 @@ if (app.get('env') === 'production') {
 }
 
 app.use(session(sessionParms));
+
 app.use(require('connect-flash')());
 
 app.set('view engine', 'ejs');
 app.use(require('body-parser').urlencoded({ extended: true }));
 
-// secret word handling
-
+// let secretWord = "syzygy"; <-- comment this out or remove this line
 app.get('/secretWord', (req, res) => {
   if (!req.session.secretWord) {
     req.session.secretWord = 'syzygy';
