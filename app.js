@@ -37,7 +37,6 @@ if (app.get('env') === 'production') {
 }
 
 app.use(session(sessionParms));
-app.use('/sessions', require('./routes/sessionRoutes'));
 
 const passport = require('passport');
 const passportInit = require('./passport/passportInit');
@@ -48,11 +47,13 @@ app.use(passport.session());
 
 app.use(require('./middleware/storeLocals'));
 app.get('/', (req, res) => {
-  console.log('User in index route:', req.user);
   res.render('index');
 });
 
 const auth = require('./middleware/auth');
+
+app.use('/sessions', require('./routes/sessionRoutes'));
+
 const secretWordRouter = require('./routes/secretWord');
 app.use('/secretWord', auth, secretWordRouter);
 
