@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const parseVErr = require('../util/parseValidationErrs');
+const csrf = require('host-csrf');
 
 const registerShow = (req, res) => {
   res.render('register');
@@ -30,6 +31,7 @@ const logoff = (req, res) => {
     if (err) {
       console.log(err);
     }
+    csrf.refresh(req, res);
     res.redirect('/');
   });
 };
@@ -38,6 +40,7 @@ const logonShow = (req, res) => {
   if (req.user) {
     return res.redirect('/');
   }
+  csrf.refresh(req, res);
   res.render('logon');
 };
 

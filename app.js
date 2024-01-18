@@ -4,6 +4,8 @@ const express = require('express');
 const app = express();
 require('express-async-errors');
 require('dotenv').config(); // to load the .env file into the process.env object
+const csrf = require('host-csrf');
+const cookieParser = require('cookie-parser');
 
 // middleware
 
@@ -51,15 +53,36 @@ app.use(passport.session());
 
 app.use(require('./middleware/storeLocals'));
 
+// csrf middleware
+
+app.use(cookieParser(process.env.SESSION_SECRET));
+app.use(express.urlencoded({ extended: false }));
+let csrf_development_mode = true;
+if (app.get('env') === 'production') {
+  csrf_development_mode = false;
+  app.set('trust proxy', 1);
+}
+
+const csrf_options = {
+  development_mode: csrf_development_mode,
+  protected_operations: ['POST'],
+  protected_content_types: ['application/x-www-form-urlencoded'],
+  developer_mode: false,
+  header_name: 'csrf-token',
+};
+
+app.use(csrf(csrf_options));
+
 // routes
 
 app.get('/', (req, res) => {
   res.render('index');
 });
 const auth = require('./middleware/auth');
-app.use('/sessions', require('./routes/sessionRoutes'));
+const sessions = require('./routes/sessionRoutes');
+app.use('/sessions', csrf(csrf_options), sessions);
 const secretWordRouter = require('./routes/secretWord');
-app.use('/secretWord', auth, secretWordRouter);
+app.use('/secretWord', auth, csrf(csrf_options), secretWordRouter);
 
 // error routes
 
