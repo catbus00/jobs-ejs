@@ -14,8 +14,12 @@ const getAllJobs = async (req, res) => {
 };
 
 const postJob = async (req, res) => {
-  const job = await Job.create({ createdBy: req.user._id });
-  res.render('job', { job: null });
+  const {
+    user: { _id: jobOwnerID },
+    body: { status, position, company },
+  } = req;
+  await Job.create({ createdBy: jobOwnerID, status, position, company });
+  res.redirect('/jobs');
 };
 
 const getFormPostJob = async (req, res) => {
