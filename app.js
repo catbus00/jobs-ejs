@@ -79,6 +79,8 @@ app.get('/', (req, res) => {
   res.render('index');
 });
 const auth = require('./middleware/auth');
+const jobs = require('./routes/jobs');
+app.use('/jobs', auth, jobs);
 const sessions = require('./routes/sessionRoutes');
 app.use('/sessions', csrf(csrf_options), sessions);
 const secretWordRouter = require('./routes/secretWord');
