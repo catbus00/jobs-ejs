@@ -1,4 +1,4 @@
-const express = require('express');
+const parseVErr = require('../util/parseValidationErrs');
 const Job = require('../models/Job');
 
 const getAllJobs = async (req, res) => {
@@ -18,7 +18,22 @@ const postJob = async (req, res) => {
     user: { _id: jobOwnerID },
     body: { status, position, company },
   } = req;
-  await Job.create({ createdBy: jobOwnerID, status, position, company });
+  if (position === '' || company === '') {
+    req.flash('error', 'position and company must both be specified');
+    res.redirect('/jobs/new');
+    return;
+  }
+  if (await Job.findOne({ company, position })) {
+    req.flash('error', 'position for this company already exists');
+    res.redirect('/jobs/new');
+    return;
+  }
+  await Job.create({
+    createdBy: jobOwnerID,
+    status,
+    position,
+    company,
+  });
   res.redirect('/jobs');
 };
 
@@ -41,10 +56,21 @@ const getJobAndUpdate = async (req, res) => {
     user: { _id: jobOwnerID },
     body: { status, position, company },
   } = req;
-  await Job.updateOne(
+
+  if (company === '' || position === '') {
+    req.flash('error', 'Company or Position fields cannot be empty');
+    res.redirect(`/jobs/edit/${jobID}`);
+    return;
+  }
+  const job = await Job.updateOne(
     { _id: jobID, createdBy: jobOwnerID },
     { status, position, company }
   );
+
+  if (!job) {
+    throw new NotFoundError(`No job with id ${jobId}`);
+  }
+
   res.redirect('/jobs');
 };
 
