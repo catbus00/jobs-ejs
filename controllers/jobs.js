@@ -1,4 +1,5 @@
 const Job = require('../models/Job');
+const parseVErr = require('../util/parseValidationErrs');
 
 const getAllJobs = async (req, res) => {
   try {
@@ -12,28 +13,27 @@ const getAllJobs = async (req, res) => {
   }
 };
 
-const postJob = async (req, res) => {
+const postJob = async (req, res, next) => {
   const {
     user: { _id: jobOwnerID },
     body: { status, position, company },
   } = req;
-  if (position === '' || company === '') {
-    req.flash('error', 'position and company must both be specified');
-    res.redirect('/jobs/new');
-    return;
+  try {
+    await Job.create({
+      createdBy: jobOwnerID,
+      status,
+      position,
+      company,
+    });
+    res.redirect('/jobs');
+  } catch (e) {
+    if (e.constructor.name === 'ValidationError') {
+      parseVErr(e, req);
+      res.redirect('/jobs/new');
+    } else {
+      return next(e);
+    }
   }
-  if (await Job.findOne({ company, position })) {
-    req.flash('error', 'position for this company already exists');
-    res.redirect('/jobs/new');
-    return;
-  }
-  await Job.create({
-    createdBy: jobOwnerID,
-    status,
-    position,
-    company,
-  });
-  res.redirect('/jobs');
 };
 
 const getFormPostJob = async (req, res) => {
@@ -49,28 +49,30 @@ const getJobAndEdit = async (req, res) => {
   res.render('job', { job });
 };
 
-const getJobAndUpdate = async (req, res) => {
+const getJobAndUpdate = async (req, res, next) => {
   const {
     params: { id: jobID },
     user: { _id: jobOwnerID },
     body: { status, position, company },
   } = req;
-
-  if (company === '' || position === '') {
-    req.flash('error', 'Company or Position fields cannot be empty');
-    res.redirect(`/jobs/edit/${jobID}`);
-    return;
+  try {
+    const job = await Job.updateOne(
+      { _id: jobID, createdBy: jobOwnerID },
+      { status, position, company },
+      { runValidators: true }
+    );
+    if (!job) {
+      throw new NotFoundError(`No job with id ${jobID}`);
+    }
+    res.redirect('/jobs');
+  } catch (e) {
+    if (e.constructor.name === 'ValidationError') {
+      parseVErr(e, req);
+      res.redirect(`/jobs/edit/${jobID}`);
+    } else {
+      return next(e);
+    }
   }
-  const job = await Job.updateOne(
-    { _id: jobID, createdBy: jobOwnerID },
-    { status, position, company }
-  );
-
-  if (!job) {
-    throw new NotFoundError(`No job with id ${jobId}`);
-  }
-
-  res.redirect('/jobs');
 };
 
 const getJobAndDelete = async (req, res) => {
