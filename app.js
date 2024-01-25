@@ -12,6 +12,7 @@ const cookieParser = require('cookie-parser');
 app.set('view engine', 'ejs');
 app.use(require('body-parser').urlencoded({ extended: true }));
 app.use(require('connect-flash')());
+app.use(express.static('public'));
 
 // sessions
 
