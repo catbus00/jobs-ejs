@@ -7,11 +7,17 @@ require('dotenv').config(); // to load the .env file into the process.env object
 const csrf = require('host-csrf');
 const cookieParser = require('cookie-parser');
 
+// extra security packages
+const helmet = require('helmet');
+const xss = require('xss-clean');
+const rateLimiter = require('express-rate-limit');
+
 // middleware
 
 app.set('view engine', 'ejs');
 app.use(require('body-parser').urlencoded({ extended: true }));
 app.use(require('connect-flash')());
+app.use(express.static('public'));
 
 // sessions
 
@@ -79,6 +85,8 @@ app.get('/', (req, res) => {
   res.render('index');
 });
 const auth = require('./middleware/auth');
+const jobs = require('./routes/jobs');
+app.use('/jobs', auth, jobs);
 const sessions = require('./routes/sessionRoutes');
 app.use('/sessions', csrf(csrf_options), sessions);
 const secretWordRouter = require('./routes/secretWord');
@@ -94,6 +102,21 @@ app.use((err, req, res, next) => {
   console.log(err);
   res.status(500).send(err.message);
 });
+
+// extra packages
+
+app.set('trust proxy', 1);
+app.use(
+  rateLimiter({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes).
+    standardHeaders: 'draft-7', // draft-6: `RateLimit-*` headers; draft-7: combined `RateLimit` header
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers.
+    // store: ... , // Use an external store for consistency across multiple server instances.
+  })
+);
+app.use(helmet());
+app.use(xss());
 
 // server initialization
 
